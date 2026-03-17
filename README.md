@@ -1,5 +1,5 @@
-# AgentAlive
+# AgentPeek
 
-**"Your agents, alive."** Watch your AI agent systems breathe in real-time.
+**"Peek into your agents."** Watch your AI agent systems work in real-time.
 
 > Work in progress.

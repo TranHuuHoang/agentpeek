@@ -1,4 +1,4 @@
-# AgentAlive
+# AgentPeek
 
 See `MEMORY.md` for project vision and scope.
 

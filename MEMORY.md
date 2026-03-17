@@ -1,7 +1,7 @@
-# AgentAlive — Project Memory
+# AgentPeek — Project Memory
 
 ## Tagline
-**"Your agents, alive."** Watch your AI agent systems breathe in real-time.
+**"Peek into your agents."** Watch your AI agent systems work in real-time.
 
 ## What It Is
 A real-time visualization tool for multi-agent AI systems. Agents appear as interactive nodes on a canvas, with animated edges showing messages flowing between them. Click any node or edge to see full intermediate results. Works with any agent framework.
@@ -89,11 +89,21 @@ Priority order for LLM backend (if needed for any AI features):
 - CrewAI: 100K+ certified developers
 
 ## Naming
-- **Name:** AgentAlive
-- **PyPI:** `agentalive` — AVAILABLE ✅
-- **npm:** `agentalive` — AVAILABLE ✅
-- **GitHub:** `agentalive` — AVAILABLE ✅
-- **Tagline:** "Your agents, alive."
+- **Name:** AgentPeek
+- **PyPI:** `agentpeek` — AVAILABLE ✅
+- **npm:** `agentpeek` — AVAILABLE ✅
+- **GitHub:** `TranHuuHoang/agent-peek` (github.com/agentpeek username taken by inactive squatter)
+- **Domain:** `agentpeek.dev` — AVAILABLE ✅ (.com is parked)
+- **Tagline:** "Peek into your agents."
+- **Visual identity:** Minimalist spy-themed character avatars per agent role (spymaster, scout, analyst, forger, inspector)
+- **UI style:** Modern indie dev aesthetic — Inter font, rounded corners, glass cards, soft accent colors, dark mode
+
+### Name Research (2026-03-17)
+- "AgentPeek" dropped — agentpeek.com taken by insurance software (KRJ Software)
+- "SpyAgent" dropped — registered US trademark (#2788955), MITRE ATT&CK classified malware (S1214)
+- "agentspy" dropped — PyPI taken (AgentsPy), agent-spy repos exist in same product space
+- "agentpeek" selected — clean across PyPI, npm, all app stores, no malware/trademark conflicts
+- Minor: Korean fashion brand "Agent Peek" exists (different industry, zero overlap)
 
 ## Build Plan (1-2 weeks with Claude Code)
 | Day | Deliverable |
@@ -104,7 +114,7 @@ Priority order for LLM backend (if needed for any AI features):
 | 4 | Click/hover panel for intermediate results. Status colors. Event log sidebar. |
 | 5 | Generic OTel adapter. Cross-session grouping. Polish animations. |
 | 6 | Health/cost stats panel. Orchestration pattern detection badges. |
-| 7 | README + demo GIF + `pip install agentalive` + landing page. |
+| 7 | README + demo GIF + `pip install agentpeek` + landing page. |
 | 8 | Launch: Show HN + Twitter + r/LangChain + r/LocalLLaMA |
 
 ## What to CUT from v1
@@ -120,7 +130,7 @@ Priority order for LLM backend (if needed for any AI features):
 1. Show HN (Tuesday/Wednesday 9am US Pacific)
 2. r/LangChain (87K members) + r/LocalLLaMA (266K members)
 3. Twitter/X with demo GIF — tag Anthropic devrel, LangChain community
-4. Dev.to "How I Built AgentAlive" article
+4. Dev.to "How I Built AgentPeek" article
 5. Target: 500 stars in first week
 
 ## Tech Stack
@@ -139,4 +149,12 @@ This project was selected after evaluating 106 ideas across 40+ research agents 
 5. Must not already exist as a polished tool (validated against 20+ competitors)
 6. Must be buildable in 1-2 weeks
 
-The "live real-time agent visualization" direction survived every filter. The gap between post-hoc tools (Langfuse) and framework-locked tools (LangGraph Studio) is where AgentAlive lives.
+The "live real-time agent visualization" direction survived every filter. The gap between post-hoc tools (Langfuse) and framework-locked tools (LangGraph Studio) is where AgentPeek lives.
+
+## UI Design Direction (2026-03-17)
+- **Style:** Modern indie dev — Inter + JetBrains Mono, rounded corners (10px), glass cards (#FFFFFF06), soft accents
+- **Palette:** #09090B bg, #4ADE80 green, #60A5FA blue, #A78BFA purple, #FBBF24 amber, #F87171 red
+- **Agent avatars:** Minimalist spy characters per role — each with unique accessory (binoculars, glasses, pen, shield, etc.)
+- **Flow visualization:** Top-to-bottom with numbered steps, thick gradient arrows, labeled edges showing what was passed
+- **Right panel:** Flow summary timeline + intermediate result inspector (color-coded JSON)
+- **Design files:** `design/` directory (Pencil .pen files with multiple mockup iterations)
