@@ -1,6 +1,12 @@
-# AgentPeek
+<div align="center">
+  <h1>AgentPeek</h1>
+  <p>Real-time observability for Claude Code agent teams.</p>
 
-Real-time observability for Claude Code agent teams.
+  <a href="https://github.com/TranHuuHoang/agentpeek/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License"></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10+-blue" alt="Python"></a>
+</div>
+
+<br>
 
 You can't improve what you can't see. When Claude Code spawns 10 agents to refactor your codebase, you're blind — you don't know which agent spawned which, what's running in parallel, why something failed, or where your tokens went. AgentPeek makes all of that visible in real-time.
 
@@ -8,38 +14,79 @@ You can't improve what you can't see. When Claude Code spawns 10 agents to refac
 
 - **Agent orchestration** — who spawned who, what's parallel vs sequential, the full team hierarchy as a live directed graph
 - **Execution traces** — every tool call with full inputs/outputs, retries, failures, and timing
-- **Prompts & results** — see the exact prompt each agent received and what it returned
+- **Prompts & results** — the exact prompt each agent received and what it returned
 - **Cost attribution** — per-agent token estimates so you know which agent is burning your budget
-- **Stuck detection** — real-time alerts when an agent is looping on the same failed tool call
+- **Stuck detection** — real-time alerts when an agent is looping on the same failed call
 - **Files touched** — which agents read, wrote, edited, or deleted which files
-- **Session replay** — full chronological event log for post-session debugging and review
-- **Cross-session baselines** — track how agent types perform over time ("Explore agents average 4 tools in 3s")
-- **Bottleneck analysis** — identify the slowest agent, wasted work, and parallelism opportunities
+- **Session replay** — full chronological event log for post-session debugging
+- **Cross-session baselines** — track agent performance over time in plain English
+- **Bottleneck analysis** — identify the slowest agent, wasted work, and parallelism gaps
 
-## Prerequisites
-
-- **Claude Code** installed and running
-- **Python 3.10+**
-- **jq** — the hooks use it to write events (`brew install jq` on macOS, `apt install jq` on Linux)
-- **Node.js 18+** (only needed for frontend development)
+<!-- TODO: Add dashboard screenshot here -->
+<!-- ![AgentPeek Dashboard](docs/screenshot.png) -->
 
 ## Quick start
 
+> **Requires:** Python 3.10+, [jq](https://jqlang.github.io/jq/download/) (`brew install jq`), and [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+
 ```bash
-# Clone and install
 git clone https://github.com/TranHuuHoang/agentpeek.git
 cd agentpeek
 pip install -e .
-
-# Start (installs hooks into ~/.claude/settings.json, starts dashboard, opens browser)
 agentpeek
 ```
 
-That's it. Open Claude Code in another terminal and start working — agents will appear in the dashboard at `http://localhost:8099`.
+That's it. Hooks are auto-installed into `~/.claude/settings.json`. The dashboard opens at `http://localhost:8099`. Start Claude Code in another terminal — agents appear in real-time.
+
+## Documentation
+
+Full documentation is in this README. For architecture details, see [How it works](#how-it-works).
+
+## CLI
+
+```bash
+agentpeek                  # Start server + install hooks + open browser
+agentpeek --no-browser     # Start without opening browser
+agentpeek --port 9000      # Custom port
+agentpeek --install-hooks  # Just install hooks and exit
+agentpeek --uninstall      # Remove hooks from settings.json
+```
+
+## Dashboard
+
+### Topology
+Left-to-right directed graph showing agent orchestration. Each node displays name, type, estimated cost, duration, and errors. Arrows show spawn direction. Stuck agents get amber borders.
+
+### Timeline
+Gantt chart of agent execution. Parallel agents overlap, sequential agents are staggered. Hierarchy shown via indentation. Auto-scales from seconds to hours.
+
+### Insights
+Prioritized operational intelligence:
+
+1. **"Is my agent stuck?"** — amber alerts when loop detection fires (repeated tool calls or consecutive failures)
+2. **"Where did my tokens go?"** — stacked cost bar with per-agent breakdown, estimated via Sonnet 4 pricing
+3. **"What should I do?"** — bottleneck identification, error recovery analysis, parallelism opportunities
+4. **Agent Performance** — table with duration, token share, estimated cost, errors
+5. **Agent Type Profiles** — cross-session baselines in plain English ("Usually makes 3–5 tool calls, takes 2–4s")
+
+### Replay
+Chronological event stream with full tool I/O. Color-coded by type (spawn/call/result/error). Click to expand. Filter by agent or tool.
+
+### Detail panel
+Click any agent to inspect: performance cards, execution trace with retry badges, files touched, the prompt it received, and its final output.
+
+## Session management
+
+Session tabs are auto-named from agent descriptions. Dismiss tabs with hover-X, restore from the history popover (clock icon, top-right).
+
+## Community
+
+- [GitHub Issues](https://github.com/TranHuuHoang/agentpeek/issues) — bug reports and feature requests
+- [GitHub Discussions](https://github.com/TranHuuHoang/agentpeek/discussions) — questions and ideas
 
 ## How it works
 
-AgentPeek installs async hooks into `~/.claude/settings.json`. When Claude Code runs tools or spawns sub-agents, the hooks append JSON events to `/tmp/agentpeek.jsonl` via `jq`. The AgentPeek server tails this file, builds agent state in memory, persists to SQLite for cross-session baselines, and serves a React dashboard.
+AgentPeek installs async hooks into `~/.claude/settings.json`. When Claude Code runs tools or spawns agents, hooks append JSON events to `/tmp/agentpeek.jsonl` via `jq`. The server tails this file, builds state, and serves the dashboard. All hooks are non-blocking.
 
 ```
 Claude Code hooks → jq → /tmp/agentpeek.jsonl
@@ -56,87 +103,19 @@ Claude Code hooks → jq → /tmp/agentpeek.jsonl
                      Dashboard at :8099
 ```
 
-No proxy. No API interception. All hooks are async (non-blocking) — they won't slow down Claude Code.
-
-## CLI options
-
-```bash
-agentpeek                  # Start server + install hooks + open browser
-agentpeek --no-browser     # Start without opening browser
-agentpeek --port 9000      # Custom port
-agentpeek --install-hooks  # Just install hooks and exit
-agentpeek --uninstall      # Remove hooks from settings.json
-```
-
-## The three questions AgentPeek answers
-
-### "Where did my tokens go?"
-Per-agent cost attribution using Sonnet 4 pricing ($3/MTok input, $15/MTok output). Estimates tokens from tool payload sizes (chars / 4). Each agent shows its estimated cost and percentage of session total.
-
-### "Is my agent stuck?"
-Real-time loop detection scans the last 10 tool calls per agent for:
-- **Repeated tool** — same tool + input called 3+ times (e.g., reading a non-existent file in a loop)
-- **Failure loop** — 3+ consecutive errors on the same tool
-
-Stuck agents get amber borders in topology and alert cards at the top of insights.
-
-### "What actually happened?"
-Session replay tab shows every event chronologically. Click any event to expand the full tool input and output. Filter by agent name or tool.
-
-## Dashboard views
-
-### Topology
-Left-to-right directed graph. Root agent on the left, spawned agents to the right. Arrows show spawn direction. Each node shows agent name, type, estimated cost, duration, and error count.
-
-### Timeline
-Horizontal Gantt bars showing when each agent ran. Indentation shows parent-child hierarchy. Parallel agents overlap visually. Works for sessions from seconds to hours (auto-scales time axis).
-
-### Insights
-1. **Is my agent stuck?** — amber alert cards for looping agents (only when detected)
-2. **Where did my tokens go?** — stacked cost breakdown bar + per-agent legend
-3. **What should I do?** — bottleneck identification, error analysis, parallelism opportunities
-4. **Agent Performance** — table with duration, token %, estimated cost, errors
-5. **Agent Type Profiles** — cross-session baselines in plain English ("Usually makes 3-5 tool calls, takes 2-4s")
-
-### Replay
-Chronological event stream for a session. Color-coded by event type (spawn/call/result/error). Click to expand full tool I/O. Filter by agent or tool name.
-
-## Session management
-
-- **Session tabs** auto-named from the first agent's description (e.g., "webapp: Explore component structure")
-- **Dismiss** tabs by hovering and clicking X
-- **Restore** dismissed sessions from the clock icon history popover (top-right)
-- **Auto-selects** the most recent active session on page load
-
 ## Development
 
 ```bash
-# Install backend in dev mode
-pip install -e .
-
-# Install frontend dependencies
-cd frontend && npm install
-
-# Run backend
-agentpeek --no-browser
-
-# Run frontend dev server (hot reload, proxies API to :8099)
-cd frontend && npm run dev
-
-# Build frontend for production (outputs to src/agentpeek/static/)
-cd frontend && npm run build
+pip install -e .                        # Backend
+cd frontend && npm install && npm run dev  # Frontend (hot reload, proxies to :8099)
+cd frontend && npm run build             # Build for production
 ```
 
 ## Tech stack
 
-- **Backend**: Python — Starlette, uvicorn, aiosqlite, Pydantic, Click
-- **Frontend**: React, TypeScript, Tailwind CSS v4, React Flow, dagre
-- **Persistence**: SQLite (WAL mode) at `~/.agentpeek/history.db`
-- **Communication**: SSE (Server-Sent Events) with polling fallback
-
-## Cost estimation note
-
-Token costs are estimates based on tool payload character counts (chars / 4 ≈ tokens), priced at Claude Sonnet 4 rates. These represent only the tool I/O portion — actual API costs include conversation context, system prompts, and model reasoning which hooks cannot capture. Use the estimates for relative comparison between agents, not as billing predictions.
+**Backend:** Python — Starlette, uvicorn, aiosqlite, Pydantic, Click
+**Frontend:** React, TypeScript, Tailwind CSS v4, React Flow, dagre
+**Persistence:** SQLite (WAL mode) · **Communication:** SSE with polling fallback
 
 ## License
 
