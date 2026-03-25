@@ -79,11 +79,6 @@ Click any agent to inspect: performance cards, execution trace with retry badges
 
 Session tabs are auto-named from agent descriptions. Dismiss tabs with hover-X, restore from the history popover (clock icon, top-right).
 
-## Community
-
-- [GitHub Issues](https://github.com/TranHuuHoang/agentpeek/issues) — bug reports and feature requests
-- [GitHub Discussions](https://github.com/TranHuuHoang/agentpeek/discussions) — questions and ideas
-
 ## How it works
 
 AgentPeek installs async hooks into `~/.claude/settings.json`. When Claude Code runs tools or spawns agents, hooks append JSON events to `/tmp/agentpeek.jsonl` via `jq`. The server tails this file, builds state, and serves the dashboard. All hooks are non-blocking.
