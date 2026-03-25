@@ -283,12 +283,8 @@ class EventProcessor:
             if tp:
                 session_usage = self._read_transcript_usage(tp)
 
-        total_input = session_usage.get("input_tokens", 0) + session_usage.get("cache_creation_input_tokens", 0)
-        total_cache_read = session_usage.get("cache_read_input_tokens", 0)
+        total_input = session_usage.get("input_tokens", 0)
         total_output = session_usage.get("output_tokens", 0)
-
-        # Sonnet 4 pricing
-        session_cost = (total_input * 3 + total_cache_read * 0.30 + total_output * 15) / 1_000_000
 
         # Filter edges and events
         if session_filter:
@@ -317,8 +313,6 @@ class EventProcessor:
                 "total_tool_calls": sum(len(v) for v in tool_calls.values()),
                 "session_input_tokens": total_input,
                 "session_output_tokens": total_output,
-                "session_cache_read_tokens": total_cache_read,
-                "session_cost": round(session_cost, 4),
             },
         }
 

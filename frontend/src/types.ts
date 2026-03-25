@@ -101,8 +101,6 @@ export interface Summary {
   total_tool_calls: number
   session_input_tokens: number
   session_output_tokens: number
-  session_cache_read_tokens: number
-  session_cost: number
 }
 
 export interface AppState {

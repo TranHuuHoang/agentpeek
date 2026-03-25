@@ -7,7 +7,7 @@ const EMPTY_STATE: AppState = {
   events: [],
   tool_calls: {},
   sessions: [],
-  summary: { total_agents: 0, active_agents: 0, error_agents: 0, total_events: 0, total_tool_calls: 0, session_input_tokens: 0, session_output_tokens: 0, session_cache_read_tokens: 0, session_cost: 0 },
+  summary: { total_agents: 0, active_agents: 0, error_agents: 0, total_events: 0, total_tool_calls: 0, session_input_tokens: 0, session_output_tokens: 0 },
 }
 
 export function useAgentState(sessionFilter: string | null) {

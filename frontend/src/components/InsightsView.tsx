@@ -270,7 +270,7 @@ export default function InsightsView({ agents, toolCalls, summary, onSelectAgent
           <div className="flex items-center gap-2 mb-2.5">
             <span className="text-[#60A5FA] text-[16px]">{'\u26A1'}</span>
             <p className="text-[13px] font-sans font-bold text-[#E4E4E7]">Where did my tokens go?</p>
-            <span className="text-[10px] font-sans text-[#A1A1AA]">{summary.session_cost > 0 ? `$${summary.session_cost.toFixed(2)}` : '~est'} total</span>
+            <span className="text-[10px] font-sans text-[#A1A1AA]">{(summary.session_input_tokens + summary.session_output_tokens) > 0 ? `${((summary.session_input_tokens + summary.session_output_tokens) / 1000).toFixed(0)}k tokens` : ''}</span>
           </div>
           <div className="border border-border rounded-lg p-3 bg-surface">
             {/* Stacked bar */}
@@ -311,7 +311,7 @@ export default function InsightsView({ agents, toolCalls, summary, onSelectAgent
                       {a.name.replace(/\s+/g, '_').toLowerCase()}
                     </span>
                     <span className={`text-[9px] font-mono ${a.id === mostExpensiveId ? 'text-[#E4E4E7]' : 'text-[#A1A1AA]'}`}>
-                      {Math.round(a.token_share_pct)}% · ~${(summary.session_cost * a.token_share_pct / 100).toFixed(2)}
+                      {Math.round(a.token_share_pct)}%
                     </span>
                   </button>
                 ))}
@@ -363,7 +363,6 @@ export default function InsightsView({ agents, toolCalls, summary, onSelectAgent
                   <th className="text-left px-2 py-1.5 font-medium">Type</th>
                   <th className="text-right px-2 py-1.5 font-medium">Duration</th>
                   <th className="text-right px-2 py-1.5 font-medium">~Tokens</th>
-                  <th className="text-right px-2 py-1.5 font-medium">~Share</th>
                   <th className="text-right px-2 py-1.5 font-medium">Errors</th>
                   <th className="text-center px-2 py-1.5 font-medium">Status</th>
                 </tr>
@@ -420,13 +419,6 @@ export default function InsightsView({ agents, toolCalls, summary, onSelectAgent
                           <span className="text-text-muted font-mono">-</span>
                         )}
                       </td>
-                      <td className="px-2 py-1.5 text-right font-mono text-text-secondary">
-                        {summary.session_cost > 0 && a.token_share_pct > 0 ? (
-                          <span className="text-[9px]">~${(summary.session_cost * a.token_share_pct / 100).toFixed(2)}</span>
-                        ) : (
-                          <span className="text-text-muted">-</span>
-                        )}
-                      </td>
                       <td className="px-2 py-1.5 text-right font-mono">
                         {a.error_count > 0 ? (
                           <span className="text-red">{a.error_count}</span>
@@ -450,7 +442,7 @@ export default function InsightsView({ agents, toolCalls, summary, onSelectAgent
               </tbody>
             </table>
             <div className="px-3 py-1.5 bg-surface-elevated/30 border-t border-border">
-              <span className="text-[9px] font-sans text-text-muted">{summary.session_cost > 0 ? 'real tokens from transcript \u00B7 per-agent split is proportional' : '~est from payload sizes \u00B7 no transcript data'}</span>
+              <span className="text-[9px] font-sans text-text-muted">per-agent share is proportional to tool I/O volume</span>
             </div>
           </div>
         </div>

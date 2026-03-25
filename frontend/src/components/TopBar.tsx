@@ -24,13 +24,10 @@ export default function TopBar({ summary, connected }: TopBarProps) {
         {summary.error_agents > 0 && (
           <span className="text-red font-sans">{summary.error_agents} err</span>
         )}
-        {summary.session_cost > 0 && (
-          <>
-            <span className="text-[#A1A1AA] font-sans">
-              {((summary.session_input_tokens + summary.session_output_tokens) / 1000000).toFixed(1)}M tok
-            </span>
-            <span className="text-[#D4D4D8] font-sans">${summary.session_cost.toFixed(2)}</span>
-          </>
+        {(summary.session_input_tokens + summary.session_output_tokens) > 0 && (
+          <span className="text-[#D4D4D8] font-sans">
+            {((summary.session_input_tokens + summary.session_output_tokens) / 1000).toFixed(0)}k tok
+          </span>
         )}
       </div>
     </div>
