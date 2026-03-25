@@ -48,3 +48,7 @@ coverage/
 
 # Claude Code
 .claude/settings.local.json
+
+demo_video.py
+test_simulation.py
+demo.sh
