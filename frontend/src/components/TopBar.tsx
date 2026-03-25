@@ -27,7 +27,7 @@ export default function TopBar({ summary, connected }: TopBarProps) {
         {summary.session_cost > 0 && (
           <>
             <span className="text-[#A1A1AA] font-sans">
-              {((summary.session_input_tokens + summary.session_cache_read_tokens + summary.session_output_tokens) / 1000000).toFixed(1)}M tok
+              {((summary.session_input_tokens + summary.session_output_tokens) / 1000000).toFixed(1)}M tok
             </span>
             <span className="text-[#D4D4D8] font-sans">${summary.session_cost.toFixed(2)}</span>
           </>
