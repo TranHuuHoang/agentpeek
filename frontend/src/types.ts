@@ -99,7 +99,10 @@ export interface Summary {
   error_agents: number
   total_events: number
   total_tool_calls: number
-  total_chars_in_session: number
+  session_input_tokens: number
+  session_output_tokens: number
+  session_cache_read_tokens: number
+  session_cost: number
 }
 
 export interface AppState {

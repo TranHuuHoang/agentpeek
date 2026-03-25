@@ -89,6 +89,7 @@ export default function App() {
               <InsightsView
                 agents={state.agents}
                 toolCalls={state.tool_calls}
+                summary={state.summary}
                 onSelectAgent={setSelectedAgentId}
                 selectedAgentId={selectedAgentId}
               />

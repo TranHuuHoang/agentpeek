@@ -24,7 +24,11 @@ export default function TopBar({ summary, connected }: TopBarProps) {
         {summary.error_agents > 0 && (
           <span className="text-red font-sans">{summary.error_agents} err</span>
         )}
-        <span className="text-[#A1A1AA] font-sans">{summary.total_tool_calls}t</span>
+        {summary.session_cost > 0 ? (
+          <span className="text-[#D4D4D8] font-sans">${summary.session_cost.toFixed(2)}</span>
+        ) : (
+          <span className="text-[#A1A1AA] font-sans">{summary.total_tool_calls}t</span>
+        )}
       </div>
     </div>
   )

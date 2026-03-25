@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import json
+import os
 import time
 import uuid
 from datetime import datetime, timezone
@@ -78,6 +80,9 @@ class EventProcessor:
         # Baseline cache: subagent_type -> {baseline_data, fetched_at_ms}
         self._baseline_cache: dict[str, dict] = {}
         self._baseline_cache_ttl_ms = 60_000  # 60s TTL
+
+        # Transcript usage cache: transcript_path -> {file_size, usage}
+        self._transcript_cache: dict[str, dict] = {}
 
     def _root_id(self, session_id: str) -> str:
         return f"root:{session_id}"
@@ -196,6 +201,40 @@ class EventProcessor:
 
         return None
 
+    def _read_transcript_usage(self, transcript_path: str) -> dict:
+        """Read real token usage from Claude Code transcript file."""
+        if not transcript_path or not os.path.exists(transcript_path):
+            return {}
+
+        file_size = os.path.getsize(transcript_path)
+        cache_key = transcript_path
+        cached = self._transcript_cache.get(cache_key)
+        if cached and cached.get("file_size") == file_size:
+            return cached.get("usage", {})
+
+        usage = {"input_tokens": 0, "output_tokens": 0, "cache_read_input_tokens": 0, "cache_creation_input_tokens": 0}
+        try:
+            with open(transcript_path, "r") as f:
+                for line in f:
+                    try:
+                        d = json.loads(line.strip())
+                        if d.get("type") == "assistant":
+                            msg = d.get("message", {})
+                            if isinstance(msg, dict):
+                                u = msg.get("usage", {})
+                                if u:
+                                    usage["input_tokens"] += u.get("input_tokens", 0)
+                                    usage["output_tokens"] += u.get("output_tokens", 0)
+                                    usage["cache_read_input_tokens"] += u.get("cache_read_input_tokens", 0)
+                                    usage["cache_creation_input_tokens"] += u.get("cache_creation_input_tokens", 0)
+                    except (json.JSONDecodeError, KeyError):
+                        continue
+        except OSError:
+            return {}
+
+        self._transcript_cache[cache_key] = {"file_size": file_size, "usage": usage}
+        return usage
+
     def get_state(self, session_filter: str | None = None) -> dict:
         # Filter by session if requested
         if session_filter:
@@ -227,7 +266,7 @@ class EventProcessor:
                 a["parent_name"] = None
             agents_augmented[aid] = a
 
-        # Compute session-wide totals for cost attribution
+        # Compute session-wide totals for cost attribution (proportional share)
         total_chars = sum(
             a.get("estimated_input_chars", 0) + a.get("estimated_output_chars", 0)
             for a in agents_augmented.values()
@@ -236,6 +275,20 @@ class EventProcessor:
             agent_chars = a.get("estimated_input_chars", 0) + a.get("estimated_output_chars", 0)
             a["estimated_total_chars"] = agent_chars
             a["token_share_pct"] = round(agent_chars / total_chars * 100, 1) if total_chars > 0 else 0.0
+
+        # Real token usage from transcript
+        session_usage = {"input_tokens": 0, "output_tokens": 0, "cache_read_input_tokens": 0, "cache_creation_input_tokens": 0}
+        if session_filter and session_filter in self.sessions:
+            tp = self.sessions[session_filter].get("transcript_path", "")
+            if tp:
+                session_usage = self._read_transcript_usage(tp)
+
+        total_input = session_usage.get("input_tokens", 0) + session_usage.get("cache_creation_input_tokens", 0)
+        total_cache_read = session_usage.get("cache_read_input_tokens", 0)
+        total_output = session_usage.get("output_tokens", 0)
+
+        # Sonnet 4 pricing
+        session_cost = (total_input * 3 + total_cache_read * 0.30 + total_output * 15) / 1_000_000
 
         # Filter edges and events
         if session_filter:
@@ -262,7 +315,10 @@ class EventProcessor:
                 "error_agents": error_count,
                 "total_events": len(events),
                 "total_tool_calls": sum(len(v) for v in tool_calls.values()),
-                "total_chars_in_session": total_chars,
+                "session_input_tokens": total_input,
+                "session_output_tokens": total_output,
+                "session_cache_read_tokens": total_cache_read,
+                "session_cost": round(session_cost, 4),
             },
         }
 
@@ -304,6 +360,11 @@ class EventProcessor:
                 asyncio.get_event_loop().create_task(
                     self._init_session_in_db(session_id, now_ms, project_path)
                 )
+
+        # Capture transcript_path from events
+        transcript_path = data.get("transcript_path", "")
+        if transcript_path and session_id in self.sessions:
+            self.sessions[session_id].setdefault("transcript_path", transcript_path)
 
         # Auto-discover agents from agent_id field
         agent_id = data.get("agent_id", "")

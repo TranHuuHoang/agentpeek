@@ -2,7 +2,7 @@ import { memo } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import type { Agent } from '../types'
 import { agentColor } from '../utils/colors'
-import { formatDuration, estimateCostFromIO, formatCost } from '../utils/format'
+import { formatDuration } from '../utils/format'
 
 interface AgentNodeData {
   agent: Agent
@@ -75,10 +75,10 @@ function AgentNodeComponent({ data }: { data: AgentNodeData }) {
             </span>
           )}
           <span className="text-[11px] font-mono" style={{ color: '#B4B4BD' }}>
-            {agent.estimated_total_chars > 0 ? (
+            {agent.token_share_pct > 0 ? (
               <>
                 <span style={{ color: agent.token_share_pct > 50 ? '#FBBF24' : '#B4B4BD' }}>
-                  ~{formatCost(estimateCostFromIO(agent.estimated_input_chars, agent.estimated_output_chars))}
+                  {Math.round(agent.token_share_pct)}%
                 </span>
                 {' \u00B7 '}
               </>

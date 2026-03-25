@@ -1,12 +1,13 @@
 import { useEffect } from 'react'
 import { useBaselines } from '../hooks/useBaselines'
-import type { Agent, ToolCall } from '../types'
+import type { Agent, ToolCall, Summary } from '../types'
 import { agentColor } from '../utils/colors'
-import { formatDuration, formatChars, estimateCostFromIO, formatCost } from '../utils/format'
+import { formatDuration } from '../utils/format'
 
 interface InsightsViewProps {
   agents: Record<string, Agent>
   toolCalls: Record<string, ToolCall[]>
+  summary: Summary
   onSelectAgent: (id: string) => void
   selectedAgentId: string | null
 }
@@ -51,7 +52,7 @@ function generateRecommendations(
       icon: '\u26A0',
       iconColor: '#FBBF24',
       title: `${costHog.name.replace(/\s+/g, '_').toLowerCase()} dominates token usage (${Math.round(costHog.token_share_pct)}%)`,
-      detail: `~${formatChars(costHog.estimated_total_chars)} chars (~${formatCost(estimateCostFromIO(costHog.estimated_input_chars, costHog.estimated_output_chars))}). Consider breaking this agent into smaller scoped subagents.`,
+      detail: `${Math.round(costHog.token_share_pct)}% of session cost. Consider breaking this agent into smaller scoped subagents.`,
       agentId: costHog.id,
       severity: 'warning',
     })
@@ -195,7 +196,7 @@ function baselineToInsight(b: {
 
 // -- Component ────────────────────────────────────────────────────────
 
-export default function InsightsView({ agents, toolCalls, onSelectAgent, selectedAgentId }: InsightsViewProps) {
+export default function InsightsView({ agents, toolCalls, summary, onSelectAgent, selectedAgentId }: InsightsViewProps) {
   const { baselines, fetchBaselines } = useBaselines()
   useEffect(() => { fetchBaselines() }, [fetchBaselines])
 
@@ -269,7 +270,7 @@ export default function InsightsView({ agents, toolCalls, onSelectAgent, selecte
           <div className="flex items-center gap-2 mb-2.5">
             <span className="text-[#60A5FA] text-[16px]">{'\u26A1'}</span>
             <p className="text-[13px] font-sans font-bold text-[#E4E4E7]">Where did my tokens go?</p>
-            <span className="text-[10px] font-sans text-[#A1A1AA]">~{formatCost(agentList.reduce((s, a) => s + estimateCostFromIO(a.estimated_input_chars, a.estimated_output_chars), 0))} total</span>
+            <span className="text-[10px] font-sans text-[#A1A1AA]">{summary.session_cost > 0 ? `$${summary.session_cost.toFixed(2)}` : '~est'} total</span>
           </div>
           <div className="border border-border rounded-lg p-3 bg-surface">
             {/* Stacked bar */}
@@ -310,7 +311,7 @@ export default function InsightsView({ agents, toolCalls, onSelectAgent, selecte
                       {a.name.replace(/\s+/g, '_').toLowerCase()}
                     </span>
                     <span className={`text-[9px] font-mono ${a.id === mostExpensiveId ? 'text-[#E4E4E7]' : 'text-[#A1A1AA]'}`}>
-                      {formatChars(a.estimated_total_chars)} · ~{formatCost(estimateCostFromIO(a.estimated_input_chars, a.estimated_output_chars))}
+                      {Math.round(a.token_share_pct)}% · ~${(summary.session_cost * a.token_share_pct / 100).toFixed(2)}
                     </span>
                   </button>
                 ))}
@@ -362,7 +363,7 @@ export default function InsightsView({ agents, toolCalls, onSelectAgent, selecte
                   <th className="text-left px-2 py-1.5 font-medium">Type</th>
                   <th className="text-right px-2 py-1.5 font-medium">Duration</th>
                   <th className="text-right px-2 py-1.5 font-medium">~Tokens</th>
-                  <th className="text-right px-2 py-1.5 font-medium">~Cost</th>
+                  <th className="text-right px-2 py-1.5 font-medium">~Share</th>
                   <th className="text-right px-2 py-1.5 font-medium">Errors</th>
                   <th className="text-center px-2 py-1.5 font-medium">Status</th>
                 </tr>
@@ -420,8 +421,8 @@ export default function InsightsView({ agents, toolCalls, onSelectAgent, selecte
                         )}
                       </td>
                       <td className="px-2 py-1.5 text-right font-mono text-text-secondary">
-                        {a.estimated_total_chars > 0 ? (
-                          <span className="text-[9px]">~{formatCost(estimateCostFromIO(a.estimated_input_chars, a.estimated_output_chars))}</span>
+                        {summary.session_cost > 0 && a.token_share_pct > 0 ? (
+                          <span className="text-[9px]">~${(summary.session_cost * a.token_share_pct / 100).toFixed(2)}</span>
                         ) : (
                           <span className="text-text-muted">-</span>
                         )}
@@ -449,7 +450,7 @@ export default function InsightsView({ agents, toolCalls, onSelectAgent, selecte
               </tbody>
             </table>
             <div className="px-3 py-1.5 bg-surface-elevated/30 border-t border-border">
-              <span className="text-[9px] font-sans text-text-muted">~est from payload sizes \u00B7 not actual API token counts</span>
+              <span className="text-[9px] font-sans text-text-muted">{summary.session_cost > 0 ? 'real tokens from transcript \u00B7 per-agent split is proportional' : '~est from payload sizes \u00B7 no transcript data'}</span>
             </div>
           </div>
         </div>

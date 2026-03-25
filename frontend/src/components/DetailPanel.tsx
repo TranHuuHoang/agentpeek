@@ -1,6 +1,6 @@
 import type { Agent, ToolCall } from '../types'
 import { agentColor } from '../utils/colors'
-import { formatDuration, formatDurationCompact, formatChars, estimateCostFromIO, formatCost } from '../utils/format'
+import { formatDuration, formatDurationCompact } from '../utils/format'
 
 interface DetailPanelProps {
   agent: Agent | null
@@ -73,16 +73,17 @@ export default function DetailPanel({ agent, toolCalls }: DetailPanelProps) {
             baselineColor={score && score.duration_z > 2 ? '#F59E0B' : '#10B981'}
           />
           <PerfCard
-            value={agent.estimated_total_chars > 0 ? `~${formatChars(agent.estimated_total_chars)}` : String(agent.tool_count)}
-            label={agent.estimated_total_chars > 0 ? 'tokens' : 'tools'}
-            baseline={agent.estimated_total_chars > 0 ? `${Math.round(agent.token_share_pct)}% of session` : baselineAvgTools}
-            baselineColor={agent.token_share_pct > 50 ? '#F59E0B' : '#A1A1AA'}
+            value={String(agent.tool_count)}
+            label="calls"
+            baseline={baselineAvgTools}
+            baselineColor={'#A1A1AA'}
           />
           <PerfCard
-            value={agent.estimated_total_chars > 0 ? `~${formatCost(estimateCostFromIO(agent.estimated_input_chars, agent.estimated_output_chars))}` : String(agent.error_count)}
-            label={agent.estimated_total_chars > 0 ? 'est. cost' : 'errors'}
-            baseline={agent.estimated_total_chars > 0 ? 'sonnet 4' : null}
-            baselineColor={agent.estimated_total_chars > 0 ? '#71717A' : (agent.error_count === 0 ? '#10B981' : '#EF4444')}
+            value={agent.token_share_pct > 0 ? `${Math.round(agent.token_share_pct)}%` : '-'}
+            label="of session"
+            baseline={null}
+            baselineColor={agent.token_share_pct > 50 ? '#F59E0B' : '#A1A1AA'}
+            valueColor={agent.token_share_pct > 50 ? '#FBBF24' : undefined}
           />
           <PerfCard
             value={String(agent.error_count)}
