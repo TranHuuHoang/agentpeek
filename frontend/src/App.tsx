@@ -9,7 +9,6 @@ import GanttView from './components/GanttView'
 import InsightsView from './components/InsightsView'
 import ReplayView from './components/ReplayView'
 import DetailPanel from './components/DetailPanel'
-import LiveOutput from './components/LiveOutput'
 
 export default function App() {
   const [sessionFilter, setSessionFilter] = useState<string | null>(null)
@@ -39,8 +38,6 @@ export default function App() {
 
   const selectedAgent = selectedAgentId ? state.agents[selectedAgentId] ?? null : null
   const selectedToolCalls = selectedAgentId ? state.tool_calls[selectedAgentId] ?? [] : []
-  const currentSession = state.sessions.find(s => s.id === sessionFilter)
-  const sessionComplete = currentSession?.status === 'complete'
 
   return (
     <div className="h-screen flex flex-col bg-bg">
@@ -98,7 +95,6 @@ export default function App() {
               <ReplayView sessionId={sessionFilter} />
             )}
           </div>
-          <LiveOutput events={state.events} sessionComplete={sessionComplete} />
         </div>
         {/* Right: detail panel */}
         <DetailPanel
