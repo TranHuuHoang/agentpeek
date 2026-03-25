@@ -26,7 +26,7 @@ export default function TopBar({ summary, connected }: TopBarProps) {
         )}
         {(summary.session_input_tokens + summary.session_output_tokens) > 0 && (
           <span className="text-[#D4D4D8] font-sans">
-            {((summary.session_input_tokens + summary.session_output_tokens) / 1000).toFixed(0)}k tok
+            {(() => { const t = summary.session_input_tokens + summary.session_output_tokens; return t >= 1000000 ? `${(t / 1000000).toFixed(1)}M tok` : `${(t / 1000).toFixed(0)}k tok` })()}
           </span>
         )}
       </div>
