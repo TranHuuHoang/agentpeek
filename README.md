@@ -1,6 +1,8 @@
 # AgentPeek
 
-Real-time observability for Claude Code agent teams. See what your agents are doing, how much they cost, and whether they're stuck.
+Real-time observability for Claude Code agent teams.
+
+You can't improve what you can't see. When Claude Code spawns 10 agents to refactor your codebase, you're blind — you don't know which agent spawned which, what's running in parallel, why something failed, or where your tokens went. AgentPeek makes all of that visible in real-time.
 
 ## Prerequisites
 
