@@ -23,7 +23,7 @@ const NODE_HEIGHT = 80
 function layoutGraph(agents: Record<string, Agent>, edges: Edge[]): { nodes: Node[]; edges: FlowEdge[] } {
   const g = new dagre.graphlib.Graph()
   g.setDefaultEdgeLabel(() => ({}))
-  g.setGraph({ rankdir: 'LR', nodesep: 30, ranksep: 80 })
+  g.setGraph({ rankdir: 'LR', nodesep: 50, ranksep: 120 })
 
   for (const agent of Object.values(agents)) {
     g.setNode(agent.id, { width: NODE_WIDTH, height: NODE_HEIGHT })
@@ -93,7 +93,7 @@ function TopologyInner({ agents, edges, selectedAgentId, onSelectAgent }: Topolo
   useEffect(() => {
     if (nodes.length > 0) {
       // Small delay to let ReactFlow render the nodes first
-      const t = setTimeout(() => fitView({ padding: 0.3, duration: 200 }), 50)
+      const t = setTimeout(() => fitView({ padding: 0.3, maxZoom: 1, duration: 200 }), 50)
       return () => clearTimeout(t)
     }
   }, [nodes.length, fitView])
@@ -114,7 +114,7 @@ function TopologyInner({ agents, edges, selectedAgentId, onSelectAgent }: Topolo
       onPaneClick={onPaneClick}
       connectionLineType={ConnectionLineType.SmoothStep}
       fitView
-      fitViewOptions={{ padding: 0.3 }}
+      fitViewOptions={{ padding: 0.3, maxZoom: 1 }}
       proOptions={{ hideAttribution: true }}
       minZoom={0.3}
       maxZoom={2}
