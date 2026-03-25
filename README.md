@@ -4,6 +4,18 @@ Real-time observability for Claude Code agent teams.
 
 You can't improve what you can't see. When Claude Code spawns 10 agents to refactor your codebase, you're blind — you don't know which agent spawned which, what's running in parallel, why something failed, or where your tokens went. AgentPeek makes all of that visible in real-time.
 
+## What you get
+
+- **Agent orchestration** — who spawned who, what's parallel vs sequential, the full team hierarchy as a live directed graph
+- **Execution traces** — every tool call with full inputs/outputs, retries, failures, and timing
+- **Prompts & results** — see the exact prompt each agent received and what it returned
+- **Cost attribution** — per-agent token estimates so you know which agent is burning your budget
+- **Stuck detection** — real-time alerts when an agent is looping on the same failed tool call
+- **Files touched** — which agents read, wrote, edited, or deleted which files
+- **Session replay** — full chronological event log for post-session debugging and review
+- **Cross-session baselines** — track how agent types perform over time ("Explore agents average 4 tools in 3s")
+- **Bottleneck analysis** — identify the slowest agent, wasted work, and parallelism opportunities
+
 ## Prerequisites
 
 - **Claude Code** installed and running
