@@ -73,15 +73,9 @@ export default function DetailPanel({ agent, toolCalls }: DetailPanelProps) {
             baselineColor={score && score.duration_z > 2 ? '#F59E0B' : '#10B981'}
           />
           <PerfCard
-            value={String(agent.tool_count)}
-            label="calls"
-            baseline={baselineAvgTools}
-            baselineColor={'#A1A1AA'}
-          />
-          <PerfCard
-            value={agent.token_share_pct > 0 ? `${Math.round(agent.token_share_pct)}%` : '-'}
-            label="of session"
-            baseline={null}
+            value={agent.estimated_total_chars > 0 ? `${agent.estimated_total_chars > 1000 ? `${(agent.estimated_total_chars / 1000).toFixed(1)}k` : String(agent.estimated_total_chars)}` : String(agent.tool_count)}
+            label={agent.estimated_total_chars > 0 ? 'chars I/O' : 'calls'}
+            baseline={agent.token_share_pct > 0 ? `${Math.round(agent.token_share_pct)}% of session` : baselineAvgTools}
             baselineColor={agent.token_share_pct > 50 ? '#F59E0B' : '#A1A1AA'}
             valueColor={agent.token_share_pct > 50 ? '#FBBF24' : undefined}
           />
