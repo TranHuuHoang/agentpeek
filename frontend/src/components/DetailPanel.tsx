@@ -53,7 +53,7 @@ export default function DetailPanel({ agent, toolCalls }: DetailPanelProps) {
               {isActive ? 'active' : 'done'}
             </span>
             {hasErrors && (
-              <span className="text-[10px] font-medium font-sans px-2.5 py-1 rounded-full" style={{ color: '#EF4444', background: '#EF444418' }}>
+              <span className="text-[10px] font-medium font-sans px-2.5 py-1 rounded-full whitespace-nowrap" style={{ color: '#EF4444', background: '#EF444418' }}>
                 {agent.error_count} error{agent.error_count !== 1 ? 's' : ''}
               </span>
             )}
