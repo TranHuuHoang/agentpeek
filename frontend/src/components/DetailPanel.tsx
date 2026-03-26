@@ -45,7 +45,7 @@ export default function DetailPanel({ agent, toolCalls }: DetailPanelProps) {
             {agent.name.replace(/\s+/g, '_').toLowerCase()}
           </span>
           <span className="flex-1" />
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-col items-end gap-1">
             <span
               className="text-[10px] font-medium font-sans px-2.5 py-1 rounded-full"
               style={{ color: badgeColor, background: badgeColor + '18' }}
