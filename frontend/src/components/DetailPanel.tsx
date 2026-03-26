@@ -23,12 +23,8 @@ export default function DetailPanel({ agent, toolCalls }: DetailPanelProps) {
   const duration = agent.last_seen_ms - agent.first_seen_ms
   const hasFiles = Object.keys(agent.files_touched).length > 0
 
-  // Status badge
-  let badgeText: string, badgeColor: string
-  if (isActive && hasErrors) { badgeText = 'active'; badgeColor = '#F59E0B' }
-  else if (isActive) { badgeText = 'active'; badgeColor = '#10B981' }
-  else if (hasErrors) { badgeText = 'done'; badgeColor = '#F59E0B' }
-  else { badgeText = 'done'; badgeColor = '#10B981' }
+  // Status badge color
+  const badgeColor = isActive ? '#10B981' : hasErrors ? '#F59E0B' : '#10B981'
 
   // Baseline data from score
   const score = agent.score
@@ -49,13 +45,19 @@ export default function DetailPanel({ agent, toolCalls }: DetailPanelProps) {
             {agent.name.replace(/\s+/g, '_').toLowerCase()}
           </span>
           <span className="flex-1" />
-          <span
-            className="text-[10px] font-medium font-sans px-2.5 py-1 rounded-full"
-            style={{ color: badgeColor, background: badgeColor + '18' }}
-          >
-            {badgeText}
-            {hasErrors && ' · errors'}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span
+              className="text-[10px] font-medium font-sans px-2.5 py-1 rounded-full"
+              style={{ color: badgeColor, background: badgeColor + '18' }}
+            >
+              {isActive ? 'active' : 'done'}
+            </span>
+            {hasErrors && (
+              <span className="text-[10px] font-medium font-sans px-2.5 py-1 rounded-full" style={{ color: '#EF4444', background: '#EF444418' }}>
+                {agent.error_count} error{agent.error_count !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
         </div>
         <p className="text-[11px] font-sans text-text-muted mt-2">
           spawned by <span className="font-mono text-text-secondary">{agent.parent_name?.replace(/\s+/g, '_').toLowerCase() ?? 'root'}</span> · type: <span className="font-mono text-text-secondary">{agent.subagent_type ?? 'root'}</span>
