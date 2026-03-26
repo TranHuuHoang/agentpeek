@@ -39,11 +39,10 @@ export default function DetailPanel({ agent, toolCalls }: DetailPanelProps) {
     <div className="w-[400px] border-l border-border bg-surface flex flex-col overflow-y-auto">
       {/* Header */}
       <div className="px-6 pt-5 pb-4 border-b border-border">
-        <div className="flex items-center gap-2.5">
-          <span className="text-[14px] font-bold font-mono truncate" style={{ color: hasErrors ? '#EF4444' : color }}>
+        <div className="flex items-start gap-2">
+          <span className="text-[14px] font-bold font-mono truncate flex-1 min-w-0" style={{ color: hasErrors ? '#EF4444' : color }}>
             {agent.name.replace(/\s+/g, '_').toLowerCase()}
           </span>
-          <span className="flex-1" />
           <div className="flex flex-col items-end gap-1">
             <span
               className="text-[10px] font-medium font-sans px-2.5 py-1 rounded-full"
