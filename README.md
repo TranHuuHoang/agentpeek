@@ -22,8 +22,9 @@ You can't improve what you can't see. When Claude Code spawns 10 agents to refac
 - **Cross-session baselines** — track agent performance over time in plain English
 - **Bottleneck analysis** — identify the slowest agent, wasted work, and parallelism gaps
 
-<!-- TODO: Add dashboard screenshot here -->
-<!-- ![AgentPeek Dashboard](docs/screenshot.png) -->
+<p align="center">
+  <img src="agentpeek-demo.gif" alt="AgentPeek Demo" width="800">
+</p>
 
 ## Quick start
 
