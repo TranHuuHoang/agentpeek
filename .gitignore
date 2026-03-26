@@ -52,3 +52,19 @@ coverage/
 demo_video.py
 test_simulation.py
 demo.sh
+
+# Video files
+*.mp4
+*.mov
+
+# PoC (local only)
+poc/
+
+# Internal docs
+MEMORY.md
+PROJECT.md
+
+# Claude settings (personal)
+.claude/settings.json
+frontend/.gitignore
+frontend/README.md
