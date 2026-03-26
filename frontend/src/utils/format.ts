@@ -34,6 +34,13 @@ export function formatChars(chars: number): string {
   return `${(chars / 1000000).toFixed(1)}M`
 }
 
+/** Format token count as human-readable (1.2k, 3.4M) */
+export function formatTokenCount(tokens: number): string {
+  if (tokens < 1000) return String(tokens)
+  if (tokens < 1000000) return `${(tokens / 1000).toFixed(1)}k`
+  return `${(tokens / 1000000).toFixed(1)}M`
+}
+
 /**
  * Estimate cost from input/output characters using model pricing.
  * Chars → tokens: ~4 chars per token for English.

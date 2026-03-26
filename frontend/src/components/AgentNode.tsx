@@ -2,7 +2,7 @@ import { memo } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import type { Agent } from '../types'
 import { agentColor } from '../utils/colors'
-import { formatDuration } from '../utils/format'
+import { formatDuration, formatTokenCount } from '../utils/format'
 
 interface AgentNodeData {
   agent: Agent
@@ -75,7 +75,14 @@ function AgentNodeComponent({ data }: { data: AgentNodeData }) {
             </span>
           )}
           <span className="text-[11px] font-mono" style={{ color: '#B4B4BD' }}>
-            {agent.token_share_pct > 0 ? (
+            {(agent.real_input_tokens + agent.real_output_tokens) > 0 ? (
+              <>
+                <span style={{ color: agent.token_share_pct > 50 ? '#FBBF24' : '#B4B4BD' }}>
+                  {formatTokenCount(agent.real_input_tokens + agent.real_output_tokens)}
+                </span>
+                {' \u00B7 '}
+              </>
+            ) : agent.token_share_pct > 0 ? (
               <>
                 <span style={{ color: agent.token_share_pct > 50 ? '#FBBF24' : '#B4B4BD' }}>
                   {Math.round(agent.token_share_pct)}%

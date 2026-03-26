@@ -212,8 +212,12 @@ export default function InsightsView({ agents, toolCalls, summary, onSelectAgent
 
   const stuckAgents = agentList.filter(a => a.loop_detection?.is_stuck)
   const hasCharData = agentList.some(a => a.estimated_total_chars > 0)
+  const totalRealTokens = agentList.reduce((s, a) => s + a.real_input_tokens + a.real_output_tokens, 0)
+  const hasRealTokens = totalRealTokens > 0
   const mostExpensiveId = agentList.length > 0
-    ? agentList.reduce((max, a) => a.estimated_total_chars > max.estimated_total_chars ? a : max, agentList[0]).id
+    ? (hasRealTokens
+        ? agentList.reduce((max, a) => (a.real_input_tokens + a.real_output_tokens) > (max.real_input_tokens + max.real_output_tokens) ? a : max, agentList[0]).id
+        : agentList.reduce((max, a) => a.estimated_total_chars > max.estimated_total_chars ? a : max, agentList[0]).id)
     : null
 
   if (allAgents.length === 0 && baselines.length === 0) {
@@ -265,12 +269,12 @@ export default function InsightsView({ agents, toolCalls, summary, onSelectAgent
       )}
 
       {/* 2. Cost Breakdown */}
-      {hasCharData && agentList.length > 0 && (
+      {(hasCharData || hasRealTokens) && agentList.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-2.5">
             <span className="text-[#60A5FA] text-[16px]">{'\u26A1'}</span>
             <p className="text-[13px] font-sans font-bold text-[#E4E4E7]">Where did my tokens go?</p>
-            <span className="text-[10px] font-sans text-[#A1A1AA]">{(summary.session_input_tokens + summary.session_output_tokens) > 0 ? `${((summary.session_input_tokens + summary.session_output_tokens) / 1000).toFixed(0)}k tokens` : ''}</span>
+            <span className="text-[10px] font-sans text-[#A1A1AA]">{totalRealTokens > 0 ? `${(totalRealTokens / 1000).toFixed(0)}k tokens` : (summary.session_input_tokens + summary.session_output_tokens) > 0 ? `${((summary.session_input_tokens + summary.session_output_tokens) / 1000).toFixed(0)}k tokens` : ''}</span>
           </div>
           <div className="border border-border rounded-lg p-3 bg-surface">
             {/* Stacked bar */}
@@ -295,26 +299,29 @@ export default function InsightsView({ agents, toolCalls, summary, onSelectAgent
             {/* Legend */}
             <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3">
               {agentList
-                .filter(a => a.estimated_total_chars > 0)
-                .sort((a, b) => b.estimated_total_chars - a.estimated_total_chars)
-                .map((a) => (
-                  <button
-                    key={a.id}
-                    onClick={() => onSelectAgent(a.id)}
-                    className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
-                  >
-                    <span
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: agentColor(a.id) }}
-                    />
-                    <span className={`text-[10px] font-mono ${a.id === mostExpensiveId ? 'font-bold text-text' : 'text-text-secondary'}`}>
-                      {a.name.replace(/\s+/g, '_').toLowerCase()}
-                    </span>
-                    <span className={`text-[9px] font-mono ${a.id === mostExpensiveId ? 'text-[#E4E4E7]' : 'text-[#A1A1AA]'}`}>
-                      {Math.round(a.token_share_pct)}%
-                    </span>
-                  </button>
-                ))}
+                .filter(a => hasRealTokens ? (a.real_input_tokens + a.real_output_tokens) > 0 : a.estimated_total_chars > 0)
+                .sort((a, b) => hasRealTokens ? (b.real_input_tokens + b.real_output_tokens) - (a.real_input_tokens + a.real_output_tokens) : b.estimated_total_chars - a.estimated_total_chars)
+                .map((a) => {
+                  const agentTokens = a.real_input_tokens + a.real_output_tokens
+                  return (
+                    <button
+                      key={a.id}
+                      onClick={() => onSelectAgent(a.id)}
+                      className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: agentColor(a.id) }}
+                      />
+                      <span className={`text-[10px] font-mono ${a.id === mostExpensiveId ? 'font-bold text-text' : 'text-text-secondary'}`}>
+                        {a.name.replace(/\s+/g, '_').toLowerCase()}
+                      </span>
+                      <span className={`text-[9px] font-mono ${a.id === mostExpensiveId ? 'text-[#E4E4E7]' : 'text-[#A1A1AA]'}`}>
+                        {agentTokens > 0 ? `${agentTokens >= 1000 ? `${(agentTokens/1000).toFixed(1)}k` : agentTokens} tok` : `${Math.round(a.token_share_pct)}%`}
+                      </span>
+                    </button>
+                  )
+                })}
             </div>
           </div>
         </div>
@@ -362,7 +369,7 @@ export default function InsightsView({ agents, toolCalls, summary, onSelectAgent
                   <th className="text-left px-3 py-1.5 font-medium">Agent</th>
                   <th className="text-left px-2 py-1.5 font-medium">Type</th>
                   <th className="text-right px-2 py-1.5 font-medium">Duration</th>
-                  <th className="text-right px-2 py-1.5 font-medium">~Tokens</th>
+                  <th className="text-right px-2 py-1.5 font-medium">{hasRealTokens ? 'Tokens' : '~Tokens'}</th>
                   <th className="text-right px-2 py-1.5 font-medium">Errors</th>
                   <th className="text-center px-2 py-1.5 font-medium">Status</th>
                 </tr>
@@ -400,24 +407,46 @@ export default function InsightsView({ agents, toolCalls, summary, onSelectAgent
                         {formatDuration(duration)}
                       </td>
                       <td className="px-2 py-1.5 text-right">
-                        {a.estimated_total_chars > 0 ? (
-                          <div className="flex items-center justify-end gap-1.5">
-                            <span className={`font-mono text-[10px] ${a.token_share_pct > 50 ? 'text-amber font-bold' : 'text-text-secondary'}`}>
-                              {Math.round(a.token_share_pct)}%
-                            </span>
-                            <div className="w-8 h-1.5 rounded-full bg-surface-elevated overflow-hidden">
-                              <div
-                                className="h-full rounded-full"
-                                style={{
-                                  width: `${Math.min(a.token_share_pct, 100)}%`,
-                                  backgroundColor: a.token_share_pct > 50 ? '#FBBF24' : agentColor(a.id),
-                                }}
-                              />
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-text-muted font-mono">-</span>
-                        )}
+                        {(() => {
+                          const agentTokens = a.real_input_tokens + a.real_output_tokens
+                          if (agentTokens > 0) {
+                            return (
+                              <div className="flex items-center justify-end gap-1.5">
+                                <span className={`font-mono text-[10px] ${a.token_share_pct > 50 ? 'text-amber font-bold' : 'text-text-secondary'}`}>
+                                  {agentTokens >= 1000 ? `${(agentTokens/1000).toFixed(1)}k` : agentTokens}
+                                </span>
+                                <div className="w-8 h-1.5 rounded-full bg-surface-elevated overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full"
+                                    style={{
+                                      width: `${Math.min(a.token_share_pct, 100)}%`,
+                                      backgroundColor: a.token_share_pct > 50 ? '#FBBF24' : agentColor(a.id),
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            )
+                          }
+                          if (a.estimated_total_chars > 0) {
+                            return (
+                              <div className="flex items-center justify-end gap-1.5">
+                                <span className={`font-mono text-[10px] ${a.token_share_pct > 50 ? 'text-amber font-bold' : 'text-text-secondary'}`}>
+                                  {Math.round(a.token_share_pct)}%
+                                </span>
+                                <div className="w-8 h-1.5 rounded-full bg-surface-elevated overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full"
+                                    style={{
+                                      width: `${Math.min(a.token_share_pct, 100)}%`,
+                                      backgroundColor: a.token_share_pct > 50 ? '#FBBF24' : agentColor(a.id),
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            )
+                          }
+                          return <span className="text-text-muted font-mono">-</span>
+                        })()}
                       </td>
                       <td className="px-2 py-1.5 text-right font-mono">
                         {a.error_count > 0 ? (
@@ -442,7 +471,7 @@ export default function InsightsView({ agents, toolCalls, summary, onSelectAgent
               </tbody>
             </table>
             <div className="px-3 py-1.5 bg-surface-elevated/30 border-t border-border">
-              <span className="text-[9px] font-sans text-text-muted">per-agent share is proportional to tool I/O volume</span>
+              <span className="text-[9px] font-sans text-text-muted">{hasRealTokens ? 'per-agent usage from transcript files' : 'per-agent share is proportional to tool I/O volume'}</span>
             </div>
           </div>
         </div>

@@ -73,8 +73,13 @@ export default function DetailPanel({ agent, toolCalls }: DetailPanelProps) {
             baselineColor={score && score.duration_z > 2 ? '#F59E0B' : '#10B981'}
           />
           <PerfCard
-            value={agent.estimated_total_chars > 0 ? `${agent.estimated_total_chars > 1000 ? `${(agent.estimated_total_chars / 1000).toFixed(1)}k` : String(agent.estimated_total_chars)}` : String(agent.tool_count)}
-            label={agent.estimated_total_chars > 0 ? 'chars I/O' : 'calls'}
+            value={(() => {
+              const total = agent.real_input_tokens + agent.real_output_tokens
+              if (total > 0) return total >= 1000000 ? `${(total/1000000).toFixed(1)}M` : total >= 1000 ? `${(total/1000).toFixed(1)}k` : String(total)
+              if (agent.estimated_total_chars > 0) return `~${agent.estimated_total_chars >= 1000 ? `${(agent.estimated_total_chars/1000).toFixed(1)}k` : String(agent.estimated_total_chars)}`
+              return String(agent.tool_count)
+            })()}
+            label={agent.real_input_tokens + agent.real_output_tokens > 0 ? 'tokens' : agent.estimated_total_chars > 0 ? 'chars I/O' : 'calls'}
             baseline={agent.token_share_pct > 0 ? `${Math.round(agent.token_share_pct)}% of session` : baselineAvgTools}
             baselineColor={agent.token_share_pct > 50 ? '#F59E0B' : '#A1A1AA'}
             valueColor={agent.token_share_pct > 50 ? '#FBBF24' : undefined}

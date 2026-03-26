@@ -84,6 +84,12 @@ class EventProcessor:
         # Transcript usage cache: transcript_path -> {file_size, usage}
         self._transcript_cache: dict[str, dict] = {}
 
+        # Per-agent transcript paths: agent_id -> transcript_path
+        self._agent_transcript_paths: dict[str, str] = {}
+
+        # Subagents directory scan cache: dir_path -> {scanned_at_ms, mapping}
+        self._subagents_dir_cache: dict[str, dict] = {}
+
     def _root_id(self, session_id: str) -> str:
         return f"root:{session_id}"
 
@@ -235,6 +241,110 @@ class EventProcessor:
         self._transcript_cache[cache_key] = {"file_size": file_size, "usage": usage}
         return usage
 
+    def _read_agent_transcript_usage(self, transcript_path: str) -> dict:
+        """Read real token usage from a single agent's transcript file."""
+        if not transcript_path or not os.path.exists(transcript_path):
+            return {"input_tokens": 0, "output_tokens": 0}
+
+        file_size = os.path.getsize(transcript_path)
+        cache_key = f"agent:{transcript_path}"
+        cached = self._transcript_cache.get(cache_key)
+        if cached and cached.get("file_size") == file_size:
+            return cached.get("usage", {"input_tokens": 0, "output_tokens": 0})
+
+        usage = {"input_tokens": 0, "output_tokens": 0}
+        try:
+            with open(transcript_path, "r") as f:
+                for line in f:
+                    try:
+                        d = json.loads(line.strip())
+                        if d.get("type") == "assistant":
+                            msg = d.get("message", {})
+                            if isinstance(msg, dict):
+                                u = msg.get("usage", {})
+                                if u:
+                                    usage["input_tokens"] += u.get("input_tokens", 0)
+                                    usage["output_tokens"] += u.get("output_tokens", 0)
+                    except (json.JSONDecodeError, KeyError):
+                        continue
+        except OSError:
+            return {"input_tokens": 0, "output_tokens": 0}
+
+        self._transcript_cache[cache_key] = {"file_size": file_size, "usage": usage}
+        return usage
+
+    def _read_root_agent_usage(self, main_transcript_path: str) -> dict:
+        """Read token usage from main transcript for root agent only.
+
+        Sums only assistant entries that do NOT have agentId set
+        (or have isSidechain=false and no agentId). These belong to the root agent.
+        """
+        if not main_transcript_path or not os.path.exists(main_transcript_path):
+            return {"input_tokens": 0, "output_tokens": 0}
+
+        file_size = os.path.getsize(main_transcript_path)
+        cache_key = f"root:{main_transcript_path}"
+        cached = self._transcript_cache.get(cache_key)
+        if cached and cached.get("file_size") == file_size:
+            return cached.get("usage", {"input_tokens": 0, "output_tokens": 0})
+
+        usage = {"input_tokens": 0, "output_tokens": 0}
+        try:
+            with open(main_transcript_path, "r") as f:
+                for line in f:
+                    try:
+                        d = json.loads(line.strip())
+                        if d.get("type") == "assistant":
+                            # Skip entries that belong to subagents
+                            if d.get("agentId"):
+                                continue
+                            if d.get("isSidechain") is True:
+                                continue
+                            msg = d.get("message", {})
+                            if isinstance(msg, dict):
+                                u = msg.get("usage", {})
+                                if u:
+                                    usage["input_tokens"] += u.get("input_tokens", 0)
+                                    usage["output_tokens"] += u.get("output_tokens", 0)
+                    except (json.JSONDecodeError, KeyError):
+                        continue
+        except OSError:
+            return {"input_tokens": 0, "output_tokens": 0}
+
+        self._transcript_cache[cache_key] = {"file_size": file_size, "usage": usage}
+        return usage
+
+    def _scan_subagents_dir(self, main_transcript_path: str) -> dict[str, str]:
+        """Scan subagents directory for agent transcript files.
+
+        Returns mapping of agent_id -> transcript_path.
+        Cached with ~5 second TTL.
+        """
+        if not main_transcript_path:
+            return {}
+
+        sid_base = os.path.basename(main_transcript_path).replace(".jsonl", "")
+        subagents_dir = os.path.join(os.path.dirname(main_transcript_path), sid_base, "subagents")
+
+        now_ms = _now_ms()
+        cached = self._subagents_dir_cache.get(subagents_dir)
+        if cached and (now_ms - cached.get("scanned_at_ms", 0)) < 5000:
+            return cached.get("mapping", {})
+
+        mapping: dict[str, str] = {}
+        if os.path.isdir(subagents_dir):
+            try:
+                for fname in os.listdir(subagents_dir):
+                    if fname.startswith("agent-") and fname.endswith(".jsonl"):
+                        # agent_id is the filename without .jsonl extension
+                        agent_id = fname.replace(".jsonl", "")
+                        mapping[agent_id] = os.path.join(subagents_dir, fname)
+            except OSError:
+                pass
+
+        self._subagents_dir_cache[subagents_dir] = {"scanned_at_ms": now_ms, "mapping": mapping}
+        return mapping
+
     def get_state(self, session_filter: str | None = None) -> dict:
         # Filter by session if requested
         if session_filter:
@@ -266,7 +376,7 @@ class EventProcessor:
                 a["parent_name"] = None
             agents_augmented[aid] = a
 
-        # Compute session-wide totals for cost attribution (proportional share)
+        # Compute session-wide totals for cost attribution (proportional share from chars)
         total_chars = sum(
             a.get("estimated_input_chars", 0) + a.get("estimated_output_chars", 0)
             for a in agents_augmented.values()
@@ -278,13 +388,64 @@ class EventProcessor:
 
         # Real token usage from transcript
         session_usage = {"input_tokens": 0, "output_tokens": 0, "cache_read_input_tokens": 0, "cache_creation_input_tokens": 0}
+        main_transcript_path = ""
         if session_filter and session_filter in self.sessions:
-            tp = self.sessions[session_filter].get("transcript_path", "")
-            if tp:
-                session_usage = self._read_transcript_usage(tp)
+            main_transcript_path = self.sessions[session_filter].get("transcript_path", "")
+            if main_transcript_path:
+                session_usage = self._read_transcript_usage(main_transcript_path)
 
         total_input = session_usage.get("input_tokens", 0)
         total_output = session_usage.get("output_tokens", 0)
+
+        # Scan subagents directory for transcript files
+        subagent_transcripts: dict[str, str] = {}
+        if main_transcript_path:
+            subagent_transcripts = self._scan_subagents_dir(main_transcript_path)
+
+        # Per-agent real token usage from individual transcript files
+        for aid, a in agents_augmented.items():
+            if aid.startswith("root:"):
+                # Root agent: read only non-subagent entries from main transcript
+                if main_transcript_path:
+                    root_usage = self._read_root_agent_usage(main_transcript_path)
+                    a["real_input_tokens"] = root_usage.get("input_tokens", 0)
+                    a["real_output_tokens"] = root_usage.get("output_tokens", 0)
+                else:
+                    a["real_input_tokens"] = 0
+                    a["real_output_tokens"] = 0
+            else:
+                # Subagent: try to find its individual transcript file
+                agent_tp = self._agent_transcript_paths.get(aid, "")
+                if not agent_tp:
+                    # Try filesystem scan mapping
+                    agent_tp = subagent_transcripts.get(aid, "")
+                if not agent_tp and main_transcript_path:
+                    # Try constructing the path directly
+                    sid_base = os.path.basename(main_transcript_path).replace(".jsonl", "")
+                    subagents_dir = os.path.join(os.path.dirname(main_transcript_path), sid_base, "subagents")
+                    candidate = os.path.join(subagents_dir, f"{aid}.jsonl")
+                    if os.path.exists(candidate):
+                        agent_tp = candidate
+
+                if agent_tp:
+                    agent_usage = self._read_agent_transcript_usage(agent_tp)
+                    a["real_input_tokens"] = agent_usage.get("input_tokens", 0)
+                    a["real_output_tokens"] = agent_usage.get("output_tokens", 0)
+                else:
+                    a["real_input_tokens"] = 0
+                    a["real_output_tokens"] = 0
+
+        # Recompute token_share_pct from real tokens if available
+        total_real_tokens = sum(
+            a.get("real_input_tokens", 0) + a.get("real_output_tokens", 0)
+            for a in agents_augmented.values()
+        )
+        if total_real_tokens > 0:
+            for aid, a in agents_augmented.items():
+                agent_tokens = a.get("real_input_tokens", 0) + a.get("real_output_tokens", 0)
+                if agent_tokens > 0:
+                    a["token_share_pct"] = round(agent_tokens / total_real_tokens * 100, 1)
+                # Keep chars-based share as fallback if no real token data for this agent
 
         # Filter edges and events
         if session_filter:
@@ -326,6 +487,8 @@ class EventProcessor:
         self._known_sessions.clear()
         self.sessions.clear()
         self.tool_calls.clear()
+        self._agent_transcript_paths.clear()
+        self._subagents_dir_cache.clear()
         self._notify_subscribers()
 
     # ── Main entry point ─────────────────────────────────────────────
@@ -642,6 +805,15 @@ class EventProcessor:
         else:
             parent_id = pending.get("parent_id") or self._current_agent(session_id)
 
+        # Capture agent transcript path if available from start event
+        agent_transcript_path = (
+            data.get("agent_transcript_path")
+            or tool_input.get("agent_transcript_path")
+            or ""
+        )
+        if agent_transcript_path and agent_id:
+            self._agent_transcript_paths[agent_id] = agent_transcript_path
+
         description = (
             pending.get("description")
             or tool_input.get("description")
@@ -747,6 +919,11 @@ class EventProcessor:
                 agent_id = tool_use_id
             else:
                 agent_id = self._current_agent(session_id)
+
+        # Capture agent transcript path
+        agent_transcript_path = data.get("agent_transcript_path", "")
+        if agent_transcript_path and agent_id:
+            self._agent_transcript_paths[agent_id] = agent_transcript_path
 
         if agent_id in self.agents and not agent_id.startswith("root:"):
             agent = self.agents[agent_id]

@@ -21,6 +21,8 @@ export interface Agent {
   estimated_output_chars: number
   estimated_total_chars: number
   token_share_pct: number
+  real_input_tokens: number
+  real_output_tokens: number
   loop_detection: {
     is_stuck: boolean
     pattern: 'repeated_tool' | 'failure_loop' | null
