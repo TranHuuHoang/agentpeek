@@ -40,8 +40,7 @@ export default function DetailPanel({ agent, toolCalls }: DetailPanelProps) {
       {/* Header */}
       <div className="px-6 pt-5 pb-4 border-b border-border">
         <div className="flex items-center gap-2.5">
-          <span className={`w-2.5 h-2.5 rounded-full ${isActive ? 'bg-accent' : hasErrors ? 'bg-red' : 'bg-accent'}`} />
-          <span className="text-[14px] font-bold font-mono" style={{ color: hasErrors ? '#EF4444' : color }}>
+          <span className="text-[14px] font-bold font-mono truncate" style={{ color: hasErrors ? '#EF4444' : color }}>
             {agent.name.replace(/\s+/g, '_').toLowerCase()}
           </span>
           <span className="flex-1" />
