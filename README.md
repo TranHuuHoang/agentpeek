@@ -28,7 +28,16 @@ You can't improve what you can't see. When Claude Code spawns 10 agents to refac
 
 ## Quick start
 
-> **Requires:** Python 3.10+, [pipx](https://pipx.pypa.io/stable/installation/) (`brew install pipx`), [jq](https://jqlang.github.io/jq/download/) (`brew install jq`), and [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+### Prerequisites
+
+| Tool | macOS | Linux | Windows |
+|------|-------|-------|---------|
+| Python 3.10+ | `brew install python` | `sudo apt install python3` | [python.org](https://www.python.org/downloads/) |
+| pipx | `brew install pipx` | `sudo apt install pipx` | `pip install pipx` |
+| jq | `brew install jq` | `sudo apt install jq` | [jq releases](https://jqlang.github.io/jq/download/) |
+| Claude Code | [docs.anthropic.com](https://docs.anthropic.com/en/docs/claude-code) | ← same | ← same |
+
+### Install
 
 ```bash
 git clone https://github.com/TranHuuHoang/agentpeek.git
