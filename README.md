@@ -28,12 +28,12 @@ You can't improve what you can't see. When Claude Code spawns 10 agents to refac
 
 ## Quick start
 
-> **Requires:** Python 3.10+, [jq](https://jqlang.github.io/jq/download/) (`brew install jq`), and [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+> **Requires:** Python 3.10+, [pipx](https://pipx.pypa.io/stable/installation/) (`brew install pipx`), [jq](https://jqlang.github.io/jq/download/) (`brew install jq`), and [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 
 ```bash
 git clone https://github.com/TranHuuHoang/agentpeek.git
 cd agentpeek
-pip install -e .
+pipx install -e .
 agentpeek
 ```
 
@@ -102,7 +102,7 @@ Claude Code hooks → jq → /tmp/agentpeek.jsonl
 ## Development
 
 ```bash
-pip install -e .                        # Backend
+pipx install -e .                       # Backend
 cd frontend && npm install && npm run dev  # Frontend (hot reload, proxies to :8099)
 cd frontend && npm run build             # Build for production
 ```
