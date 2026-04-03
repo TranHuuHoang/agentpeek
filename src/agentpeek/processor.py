@@ -167,13 +167,13 @@ class EventProcessor:
         if len(calls) < 3:
             return None
 
-        # Pattern A: Same (tool_name, input_preview) appears 3+ times
+        # Pattern A: Same (tool_name, input_preview) appears 3+ times AND most recent call is still that pattern
         from collections import Counter
         signatures = [(tc.get("tool", ""), tc.get("input_preview", "")) for tc in calls if tc.get("tool") != "Agent"]
         if signatures:
             counts = Counter(signatures)
             most_common, count = counts.most_common(1)[0]
-            if count >= 3:
+            if count >= 3 and signatures[-1] == most_common:
                 return {
                     "is_stuck": True,
                     "pattern": "repeated_tool",
