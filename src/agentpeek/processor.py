@@ -163,6 +163,9 @@ class EventProcessor:
 
     def _compute_loop_detection(self, agent_id: str) -> dict | None:
         """Scan last 10 tool calls for stuck patterns."""
+        agent = self.agents.get(agent_id, {})
+        if agent.get("status") == "done":
+            return None
         calls = self.tool_calls.get(agent_id, [])[-10:]
         if len(calls) < 3:
             return None
