@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from starlette.applications import Starlette
@@ -140,16 +141,8 @@ def create_app() -> Starlette:
     # SPA fallback
     routes.append(Route("/{path:path}", fallback, methods=["GET"]))
 
-    app = Starlette(routes=routes)
-
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    async def startup():
+    @asynccontextmanager
+    async def lifespan(app):
         await db.connect()
         await processor.load_baselines()
         asyncio.create_task(tail_jsonl(processor.process_event))
@@ -162,12 +155,17 @@ def create_app() -> Starlette:
 ║  API:        http://localhost:8099/api/state                  ║
 ╚══════════════════════════════════════════════════════════════╝\033[0m
 """)
-
-    async def shutdown():
+        yield
         await db.close()
 
-    app.add_event_handler("startup", startup)
-    app.add_event_handler("shutdown", shutdown)
+    app = Starlette(routes=routes, lifespan=lifespan)
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     return app
 
